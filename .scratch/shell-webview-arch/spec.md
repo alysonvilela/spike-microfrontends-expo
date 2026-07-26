@@ -45,7 +45,9 @@ Build the architecture in six small, independently testable phases, each ending 
 - **`GET /manifest`:** authenticated endpoint (bearer or cookie) that calls `resolveManifest` with the caller's resolved env, the `X-App-Version` header, and the user's already-resolved flags.
 - **`app-clube`** (`apps/app-clube`, Next.js): one authenticated page. `packages/auth/src/ssr.ts` exports `getSession(headers)`, forwarding the incoming request's cookie to the backend's `get-session` endpoint and returning the session or `null`. The page is a Server Component gated on that result directly — no client-side auth check, no `'use client'` for the auth gate itself.
 - **Logout (phase 6):** `authClient.signOut()` on the shell invalidates the backend session; the next WebView navigation to any frontend must render logged-out, proving the cookie is genuinely tied to the backend session rather than cached independently per app.
-- **`docker-compose.local.yml`:** brings up backend + `app-clube` together for the phase 6 integration check.
+- **`docker-compose.local.yml`:** brings up backend + `app-clube` together. Used only in **phase 6** (integration check) — phases 2–5 run each service directly with `bun dev`, no Dockerfile needed.
+  - Phase 6 creates `apps/backend/Dockerfile` and `apps/app-clube/Dockerfile` alongside the compose file.
+  - `docker compose -f docker-compose.local.yml up` boots the full stack and the end-to-end flow (bearer, handshake, SSR, manifest, logout) is verified against the composed services.
 
 ## Testing Decisions
 
