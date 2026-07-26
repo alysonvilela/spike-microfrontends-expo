@@ -26,6 +26,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.10",
+    "react-dom": "^19.2.8",
+    "react-native-web": "^0.21.2",
     "typescript": "^5.8.0"
   }
 }
