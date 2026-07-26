@@ -31,10 +31,11 @@ function resolveApiHost(): string {
 export const API_BASE_URL = resolveApiHost();
 
 /**
- * The debug page served by the backend — the WebView test target.
- * This page is only reachable with a valid session (bearer token or cookie).
+ * The installed native app version from app.json.
+ * Used client-side to filter bundled manifest entries by min_app_version.
+ * The remote manifest is already filtered server-side via the X-App-Version header.
  */
-export const DEBUG_PAGE_PATH = "/debug";
+export const APP_VERSION: string = Constants.expoConfig?.version ?? "1.0.0";
 
 /**
  * Secure store keys
@@ -44,4 +45,6 @@ export const STORAGE_KEYS = {
   BEARER_TOKEN: "shell_bearer_token",
   /** The authenticated user's email, stored alongside the token for UX */
   USER_EMAIL: "shell_user_email",
+  /** Cached manifest JSON from the last successful remote fetch */
+  MANIFEST_CACHE: "shell_manifest_cache",
 } as const;

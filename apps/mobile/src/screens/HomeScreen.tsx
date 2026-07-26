@@ -2,48 +2,60 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import { API_BASE_URL, DEBUG_PAGE_PATH } from "../constants";
+import type { Manifest as ManifestType } from "manifest";
+import { API_BASE_URL, APP_VERSION } from "../constants";
+import { startManifestLoad } from "../services/manifest";
 import { generateOtt } from "../services/api";
 import { clearAll, getUserEmail } from "../services/storage";
 
 type HomeScreenProps = {
   bearerToken: string;
-  onOpenWebView: (ottUrl: string) => void;
+  onOpenWebView: (handshakeUrl: string, appName: string) => void;
   onSignOut: () => void;
 };
 
-export function HomeScreen({ bearerToken, onOpenWebView, onSignOut }: HomeScreenProps) {
+export function HomeScreen({
+  bearerToken,
+  onOpenWebView,
+  onSignOut,
+}: HomeScreenProps) {
+  const [manifest, setManifest] = useState<ManifestType | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [openingAppId, setOpeningAppId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Load the stored email on mount for display
   useEffect(() => {
     getUserEmail().then(setUserEmail);
   }, []);
 
-  async function handleOpenDebugPage() {
+  // Load the bundled manifest immediately, start background refresh
+  useEffect(() => {
+    const initial = startManifestLoad(bearerToken, setManifest);
+    setManifest(initial);
+  }, [bearerToken]);
+
+  async function handleOpenApp(appId: string, entryUrl: string, appName: string) {
     setError(null);
-    setIsGenerating(true);
+    setOpeningAppId(appId);
 
     try {
       const result = await generateOtt(bearerToken);
 
       if (result.ok) {
-        const targetUrl = `${API_BASE_URL}${DEBUG_PAGE_PATH}`;
-        const handshakeUrl = `${API_BASE_URL}/webview/enter?token=${encodeURIComponent(result.token)}&to=${encodeURIComponent(targetUrl)}`;
-        onOpenWebView(handshakeUrl);
+        const handshakeUrl = `${API_BASE_URL}/webview/enter?token=${encodeURIComponent(result.token)}&to=${encodeURIComponent(entryUrl)}`;
+        onOpenWebView(handshakeUrl, appName);
       } else {
         setError(result.error);
       }
     } catch {
       setError("Failed to generate one-time token");
     } finally {
-      setIsGenerating(false);
+      setOpeningAppId(null);
     }
   }
 
@@ -52,88 +64,113 @@ export function HomeScreen({ bearerToken, onOpenWebView, onSignOut }: HomeScreen
     onSignOut();
   }
 
+  const apps = manifest?.apps ?? [];
+  const isSingleApp = apps.length === 1;
+
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
+      <View style={styles.header}>
         <Text style={styles.title}>Shell Home</Text>
         <Text style={styles.subtitle}>
           Signed in as {userEmail ?? "loading..."}
         </Text>
-
-        <Text style={styles.sectionTitle}>WebView Test</Text>
-        <Text style={styles.description}>
-          Generate a one-time token and open the backend's debug page inside a
-          WebView. This proves the OTT handshake and cookie-based session
-          persistence work on this device.
-        </Text>
-
-        {error && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        )}
-
-        <Pressable
-          style={[styles.button, isGenerating && styles.buttonDisabled]}
-          onPress={handleOpenDebugPage}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Open Debug Page</Text>
-          )}
-        </Pressable>
-
-        <Pressable style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </Pressable>
       </View>
-    </View>
+
+      <Text style={styles.sectionTitle}>Available Apps</Text>
+      <Text style={styles.description}>
+        App version {APP_VERSION}. Tap an app to open it via authenticated
+        WebView.
+      </Text>
+
+      {error && (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {apps.map((app) => (
+        <View key={app.id} style={styles.appCard}>
+          <View style={styles.appInfo}>
+            <Text style={styles.appName}>{app.name}</Text>
+            <Text style={styles.appUrl} numberOfLines={1}>
+              {app.entry}
+            </Text>
+          </View>
+          <Pressable
+            style={[
+              styles.openButton,
+              openingAppId === app.id && styles.buttonDisabled,
+            ]}
+            onPress={() => handleOpenApp(app.id, app.entry, app.name)}
+            disabled={openingAppId === app.id}
+          >
+            {openingAppId === app.id ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.openButtonText}>Open</Text>
+            )}
+          </Pressable>
+        </View>
+      ))}
+
+      {apps.length === 0 && (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyStateText}>
+            No apps available for this device. Your app version ({APP_VERSION})
+            may be too old.
+          </Text>
+        </View>
+      )}
+
+      {!isSingleApp && apps.length > 0 && (
+        <Text style={styles.appCount}>
+          {apps.length} app{apps.length !== 1 ? "s" : ""} available
+        </Text>
+      )}
+
+      <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </Pressable>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    padding: 24,
     backgroundColor: "#f5f5f5",
   },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+  contentContainer: {
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    paddingBottom: 48,
+  },
+  header: {
+    marginBottom: 24,
   },
   title: {
     fontSize: 24,
     fontWeight: "700",
-    textAlign: "center",
-    marginBottom: 4,
     color: "#1a1a1a",
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
     color: "#666",
-    textAlign: "center",
-    marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   description: {
-    fontSize: 14,
-    color: "#555",
-    lineHeight: 20,
-    marginBottom: 20,
+    fontSize: 13,
+    color: "#888",
+    marginBottom: 16,
+    lineHeight: 18,
   },
   errorBanner: {
     backgroundColor: "#fef2f2",
@@ -148,24 +185,73 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
   },
-  button: {
+  appCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  appInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  appName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1a1a1a",
+    marginBottom: 2,
+  },
+  appUrl: {
+    fontSize: 12,
+    color: "#888",
+  },
+  openButton: {
     backgroundColor: "#2563eb",
     borderRadius: 8,
-    padding: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    minWidth: 72,
     alignItems: "center",
-    marginBottom: 12,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
-  buttonText: {
+  openButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "600",
+  },
+  emptyState: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 24,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: "#888",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  appCount: {
+    fontSize: 12,
+    color: "#aaa",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 16,
   },
   signOutButton: {
     alignItems: "center",
-    padding: 8,
+    padding: 12,
+    marginTop: 8,
   },
   signOutText: {
     color: "#dc2626",

@@ -14,6 +14,8 @@ type WebViewScreenProps = {
   handshakeUrl: string;
   /** Called when the user wants to close the WebView and go back to Home */
   onClose: () => void;
+  /** Display name for the app shown in the header (defaults to "WebView") */
+  appName?: string;
 };
 
 type WebViewState = "loading" | "success" | "error";
@@ -34,7 +36,11 @@ type WebViewState = "loading" | "success" | "error";
  * - `onHttpError` — an HTTP-level error (4xx, 5xx from the server).
  * Both render the `ErrorFallback` component instead of a blank/white page.
  */
-export function WebViewScreen({ handshakeUrl, onClose }: WebViewScreenProps) {
+export function WebViewScreen({
+  handshakeUrl,
+  onClose,
+  appName = "WebView",
+}: WebViewScreenProps) {
   const webViewRef = useRef<WebView>(null);
   const [state, setState] = useState<WebViewState>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -87,7 +93,7 @@ export function WebViewScreen({ handshakeUrl, onClose }: WebViewScreenProps) {
         <Pressable style={styles.closeButton} onPress={onClose}>
           <Text style={styles.closeButtonText}>Close</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>WebView</Text>
+        <Text style={styles.headerTitle}>{appName}</Text>
         {state === "loading" && (
           <View style={styles.loadingSpinner}>
             <ActivityIndicator size="small" color="#2563eb" />

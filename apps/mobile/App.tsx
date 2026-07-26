@@ -21,7 +21,7 @@ type Screen =
   | { name: "loading" }
   | { name: "login" }
   | { name: "home"; bearerToken: string }
-  | { name: "webview"; handshakeUrl: string }
+  | { name: "webview"; handshakeUrl: string; appName: string }
   | { name: "error"; message: string };
 
 export default function App() {
@@ -50,8 +50,8 @@ export default function App() {
     setScreen({ name: "home", bearerToken: token });
   }, []);
 
-  const handleOpenWebView = useCallback((handshakeUrl: string) => {
-    setScreen({ name: "webview", handshakeUrl });
+  const handleOpenWebView = useCallback((handshakeUrl: string, appName: string) => {
+    setScreen({ name: "webview", handshakeUrl, appName });
   }, []);
 
   const handleWebViewClose = useCallback(() => {
@@ -89,6 +89,7 @@ export default function App() {
         return (
           <WebViewScreen
             handshakeUrl={screen.handshakeUrl}
+            appName={screen.appName}
             onClose={handleWebViewClose}
           />
         );

@@ -1,0 +1,16 @@
+{
+  "version": 0,
+  "ttl": 300,
+  "env": "local",
+  "apps": [
+    {
+      "id": "clube",
+      "name": "Clube",
+      "entry": "https://clube.alysonvilela.local:3000",
+      "minAppVersion": "1.0.0",
+      "presentation": "tab",
+      "bridge": ["auth", "navigation"],
+      "fallback": "/offline"
+    }
+  ]
+}
