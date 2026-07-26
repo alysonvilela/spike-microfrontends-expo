@@ -1,0 +1,6 @@
+{
+  "name": "manifest",
+  "private": true,
+  "type": "module",
+  "scripts": {}
+}

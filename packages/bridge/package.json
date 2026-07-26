@@ -1,0 +1,6 @@
+{
+  "name": "bridge",
+  "private": true,
+  "type": "module",
+  "scripts": {}
+}
