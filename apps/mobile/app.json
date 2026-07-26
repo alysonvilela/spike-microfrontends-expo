@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Microfrontends Shell",
+    "slug": "microfrontends-shell",
+    "version": "1.0.0",
+    "scheme": "microfrontends-shell",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.alysonvilela.microfrontends.shell",
+      "infoPlist": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": true,
+          "NSAllowsLocalNetworking": true
+        }
+      }
+    },
+    "android": {
+      "package": "com.alysonvilela.microfrontends.shell",
+      "adaptiveIcon": {
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
