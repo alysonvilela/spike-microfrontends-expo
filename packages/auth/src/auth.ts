@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { bearer } from "better-auth/plugins/bearer";
 import { oneTimeToken } from "better-auth/plugins/one-time-token";
 import { db } from "./db";
 import * as schema from "./schema";
@@ -15,20 +16,23 @@ export const auth = betterAuth({
     autoSignIn: true,
   },
   plugins: [
+    bearer(),
     oneTimeToken({
       expiresIn: 1,
+      storeToken: "hashed",
     }),
   ],
   advanced: {
     crossSubDomainCookies: {
-      enabled: false,
+      enabled: true,
+      domain: ".localhost",
     },
     defaultCookieAttributes: {
       httpOnly: true,
-      secure: false,
+      secure: true,
       sameSite: "lax",
     },
-    useSecureCookies: false,
+    useSecureCookies: true,
   },
   trustedOrigins: ["*"],
 });
