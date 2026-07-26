@@ -2,7 +2,7 @@
   "name": "mobile",
   "private": true,
   "type": "module",
-  "main": "expo/AppEntry.js",
+  "main": "index.js",
   "scripts": {
     "dev": "expo start",
     "start": "expo start",
@@ -23,7 +23,7 @@
     "react-native-webview": "13.15.0"
   },
   "devDependencies": {
-    "@types/react": "~19.0.0",
+    "@types/react": "~19.1.10",
     "typescript": "^5.8.0"
   }
 }
