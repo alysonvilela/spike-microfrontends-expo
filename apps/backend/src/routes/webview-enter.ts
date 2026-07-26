@@ -1,87 +1,81 @@
 import { auth } from "auth";
 import { isRedirectAllowed } from "../allowlist";
 
-/**
- * GET /webview/enter — the OTT handshake endpoint.
- *
- * Accepts `token` and `to` query params:
- *   - `token`: a short-lived, single-use one-time token
- *   - `to`:    the allowlisted redirect destination (origin-gated)
- *
- * On success, the OTT is verified server-side, a session cookie is set
- * via the `set-cookie` header from better-auth, and the client is
- * 302-redirected to the `to` URL.
- *
- * A used token is rejected on replay because `verifyOneTimeToken`
- * marks it consumed server-side.
- */
 export async function handleWebviewEnter(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const token = url.searchParams.get("token");
   const to = url.searchParams.get("to");
+  const requestOrigin = url.origin;
+
+  console.log("[webview-enter] request_url=%s origin=%s", request.url, requestOrigin);
+  console.log("[webview-enter] token=%.8s to=%s", token ?? "", to);
 
   if (!token) {
-    return new Response(JSON.stringify({ error: "Missing 'token' query parameter" }), {
+    return new Response(JSON.stringify({ error: "Missing token" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
   }
 
   if (!to) {
-    return new Response(JSON.stringify({ error: "Missing 'to' query parameter" }), {
+    return new Response(JSON.stringify({ error: "Missing redirect target" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
   }
 
-  // Check allowlist before consuming the token
-  if (!isRedirectAllowed(to)) {
-    return new Response(JSON.stringify({ error: "Redirect destination not allowed" }), {
+  const allowed = isRedirectAllowed(to, requestOrigin);
+  console.log("[webview-enter] allowlist_check=%s", allowed);
+  if (!allowed) {
+    return new Response(JSON.stringify({ error: "Redirect not allowed" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
   }
 
-  // Verify the OTT and get a response that includes set-cookie headers
-  let ottResponse: Response;
-  try {
-    ottResponse = await auth.api.verifyOneTimeToken({
-      body: { token },
-      asResponse: true,
-    });
-  } catch {
-    // Token invalid, expired, or already used — better-auth throws when
-    // asResponse is false, but the catch covers both paths.
+  const verifyEndpoint = new URL("/api/auth/one-time-token/verify", request.url);
+  const verifyResponse = await auth.handler(
+    new Request(verifyEndpoint, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token }),
+    }),
+  );
+
+  console.log("[webview-enter] verify_status=%d", verifyResponse.status);
+
+  if (!verifyResponse.ok) {
+    const body = await verifyResponse.text().catch(() => "");
+    console.log("[webview-enter] verify_fail body=%s", body);
     return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
       status: 400,
       headers: { "content-type": "application/json" },
     });
   }
 
-  // When asResponse is true, an invalid token returns a Response with an
-  // error status rather than throwing — check it here.
-  if (!ottResponse.ok) {
-    return new Response(JSON.stringify({ error: "Invalid or expired token" }), {
-      status: 400,
-      headers: { "content-type": "application/json" },
-    });
-  }
+  const rawCookie = verifyResponse.headers.get("set-cookie");
+  console.log("[webview-enter] raw_cookie=%.60s", rawCookie ?? "");
 
-  // Extract the set-cookie header from the OTT response
-  const setCookieHeader = ottResponse.headers.get("set-cookie");
-  if (!setCookieHeader) {
+  if (!rawCookie) {
     return new Response(JSON.stringify({ error: "Failed to create session" }), {
       status: 500,
       headers: { "content-type": "application/json" },
     });
   }
 
-  // 302 redirect with the session cookie attached
+  const safeCookie = rawCookie
+    .replace(/;\s*Domain\s*=\s*[^;]+/gi, "")
+    .replace(/;\s*Secure\s*/gi, "")
+    .replace(/^__Secure-/gi, "")
+    .trim();
+
+  console.log("[webview-enter] SUCCESS redirect to=%s", to);
+
   return new Response(null, {
     status: 302,
     headers: {
       location: to,
-      "set-cookie": setCookieHeader,
+      "set-cookie": safeCookie,
     },
   });
 }

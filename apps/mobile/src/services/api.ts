@@ -87,11 +87,10 @@ export async function generateOtt(bearerToken: string): Promise<
   | { ok: false; error: string }
 > {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/auth/one-time-token`, {
-      method: "POST",
+    const res = await fetch(`${API_BASE_URL}/api/auth/one-time-token/generate`, {
+      method: "GET",
       headers: {
         authorization: `Bearer ${bearerToken}`,
-        "content-type": "application/json",
       },
     });
 

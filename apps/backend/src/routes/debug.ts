@@ -1,15 +1,7 @@
 import { auth } from "auth";
 
-/**
- * GET /debug — a minimal authenticated HTML page served directly by the
- * backend.
- *
- * This is the WebView test target for ticket 04 (Expo shell handshake).
- * It renders "you are logged in as {user}" and is only reachable with a
- * valid session (bearer token or cookie).
- */
 export async function handleDebug(request: Request): Promise<Response> {
-  const session = await auth.api.getSession({ headers: request.headers });
+  const session = await getSessionOrNull(request);
 
   if (!session) {
     return new Response(
@@ -57,6 +49,42 @@ export async function handleDebug(request: Request): Promise<Response> {
     status: 200,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+}
+
+/**
+ * Extract the session from a request, supporting both:
+ * - Authorization: Bearer <token> (via auth.api.getSession)
+ * - Cookie: better-auth.session_token=<signed> (manually extracted, then
+ *   re-queried as bearer token because getSignedCookie isn't available
+ *   when calling auth.api.getSession from outside the request pipeline)
+ */
+async function getSessionOrNull(
+  request: Request,
+): Promise<{ session: { id: string }; user: { id: string; name: string; email: string } } | null> {
+  // Try direct getSession first (catches Authorization header)
+  const direct = await auth.api
+    .getSession({ headers: request.headers })
+    .catch(() => null);
+  if (direct) return direct;
+
+  // Fallback: extract session token from cookie
+  const cookie = request.headers.get("cookie");
+  if (!cookie) return null;
+
+  const sessionCookie = cookie
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("better-auth.session_token="));
+  if (!sessionCookie) return null;
+
+  const rawValue = decodeURIComponent(sessionCookie.split("=")[1]);
+  const sessionToken = rawValue.split(".")[0];
+
+  return auth.api
+    .getSession({
+      headers: new Headers({ authorization: `Bearer ${sessionToken}` }),
+    })
+    .catch(() => null);
 }
 
 function escapeHtml(text: string): string {
