@@ -2,5 +2,7 @@
   "name": "app-clube",
   "private": true,
   "type": "module",
-  "scripts": {}
+  "scripts": {
+    "dev": "echo 'app-clube not configured yet — nothing to start'"
+  }
 }

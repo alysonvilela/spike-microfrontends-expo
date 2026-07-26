@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": ["apps/*", "packages/*"],
   "scripts": {
-    "turbo": "bun run turbo"
+    "dev": "bun run turbo dev --filter=./apps/*",
+    "turbo": "turbo"
   },
   "devDependencies": {
     "turbo": "^2.5.0",

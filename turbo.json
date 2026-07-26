@@ -1,5 +1,10 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "tasks": {}
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    }
+  }
 }
