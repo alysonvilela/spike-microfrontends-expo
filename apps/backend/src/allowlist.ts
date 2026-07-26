@@ -9,10 +9,11 @@
  */
 export const ALLOWLIST: readonly string[] = [
   "http://localhost:3000", // app-clube (Next.js dev server, direct)
-  "http://clube.localhost:3000", // app-clube via Caddy
-  "https://clube.alysonvilela.local", // app-clube via Caddy + TLS
+  "http://clube.localhost:3000", // app-clube via local Caddy (no TLS)
+  "https://clube.alysonvilela.local", // app-clube via Caddy + TLS (production)
+  "https://clube.alysonvilela.local:3000", // app-clube via Caddy + TLS + port (local)
   "http://localhost:3001", // backend's own debug page (direct)
-  "http://auth.localhost:3001", // backend via Caddy
+  "http://auth.localhost:3001", // backend via local Caddy (no TLS)
   "https://auth.alysonvilela.local", // backend via Caddy + TLS
 ] as const;
 
