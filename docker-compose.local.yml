@@ -1,0 +1,82 @@
+# Local development stack
+# ========================
+#
+# Brings up every service with one command:
+#
+#   docker compose -f docker-compose.local.yml up
+#
+# Caddy terminates TLS for *.alysonvilela.local and reverse-proxies to the
+# individual dev servers.  On first run, trust Caddy's CA:
+#
+#   caddy trust
+#
+# See scripts/setup-local-tls.sh for automated CA setup.
+
+name: microfrontends-local
+
+services:
+  # ---- Reverse proxy + TLS ----
+  caddy:
+    image: caddy:2-alpine
+    container_name: mf-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2019:2019" # Caddy admin API
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - mf-net
+
+  # ---- Backend (Better Auth + Elysia) ----
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: mf-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - HOST=alysonvilela.local
+      - PORT=3001
+    volumes:
+      - ./apps/backend:/app/apps/backend
+      - ./packages:/app/packages
+    networks:
+      - mf-net
+    depends_on:
+      - caddy
+
+  # ---- app-clube (Next.js) ----
+  app-clube:
+    build:
+      context: .
+      dockerfile: apps/app-clube/Dockerfile
+    container_name: mf-clube
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - HOST=alysonvilela.local
+      - PORT=3000
+    volumes:
+      - ./apps/app-clube:/app/apps/app-clube
+      - ./packages:/app/packages
+    networks:
+      - mf-net
+    depends_on:
+      - caddy
+
+networks:
+  mf-net:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

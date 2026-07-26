@@ -2,5 +2,9 @@
   "name": "manifest",
   "private": true,
   "type": "module",
-  "scripts": {}
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
 }
