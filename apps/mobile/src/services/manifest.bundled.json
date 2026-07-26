@@ -6,7 +6,7 @@
     {
       "id": "clube",
       "name": "Clube",
-      "entry": "https://clube.alysonvilela.local:3000",
+      "entry": "http://192.168.18.125:3000",
       "minAppVersion": "1.0.0",
       "presentation": "tab",
       "bridge": ["auth", "navigation"],

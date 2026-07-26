@@ -9,6 +9,7 @@
  */
 export const ALLOWLIST: readonly string[] = [
   "http://localhost:3000", // app-clube (Next.js dev server, direct)
+  "http://192.168.18.125:3000", // app-clube via LAN IP (physical device on same network)
   "http://clube.localhost:3000", // app-clube via local Caddy (no TLS)
   "https://clube.alysonvilela.local", // app-clube via Caddy + TLS (production)
   "https://clube.alysonvilela.local:3000", // app-clube via Caddy + TLS + port (local)
