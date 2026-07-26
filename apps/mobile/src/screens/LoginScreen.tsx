@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { signIn, type SignInResult } from "../services/api";
+import { signIn, signUp, type SignInResult } from "../services/api";
 import { saveBearerToken, saveUserEmail } from "../services/storage";
 
 type LoginScreenProps = {
@@ -17,14 +17,20 @@ type LoginScreenProps = {
 };
 
 export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
+  const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSignIn() {
+  async function handleSubmit() {
     if (!email.trim() || !password.trim()) {
       setError("Please enter both email and password");
+      return;
+    }
+    if (mode === "sign-up" && !name.trim()) {
+      setError("Please enter your name");
       return;
     }
 
@@ -32,7 +38,10 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     setIsLoading(true);
 
     try {
-      const result: SignInResult = await signIn(email.trim(), password);
+      const result: SignInResult =
+        mode === "sign-in"
+          ? await signIn(email.trim(), password)
+          : await signUp(name.trim(), email.trim(), password);
 
       if (result.ok) {
         await Promise.all([
@@ -50,6 +59,11 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     }
   }
 
+  const toggleMode = () => {
+    setMode(mode === "sign-in" ? "sign-up" : "sign-in");
+    setError(null);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -57,12 +71,30 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
     >
       <View style={styles.card}>
         <Text style={styles.title}>Microfrontends Shell</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+        <Text style={styles.subtitle}>
+          {mode === "sign-in" ? "Sign in to continue" : "Create your account"}
+        </Text>
 
         {error && (
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
           </View>
+        )}
+
+        {mode === "sign-up" && (
+          <>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name"
+              placeholderTextColor="#999"
+              autoCapitalize="words"
+              textContentType="name"
+              editable={!isLoading}
+            />
+          </>
         )}
 
         <Text style={styles.label}>Email</Text>
@@ -90,19 +122,29 @@ export function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
           autoComplete="password"
           textContentType="password"
           editable={!isLoading}
-          onSubmitEditing={handleSignIn}
+          onSubmitEditing={handleSubmit}
         />
 
         <Pressable
           style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleSignIn}
+          onPress={handleSubmit}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Sign In</Text>
+            <Text style={styles.buttonText}>
+              {mode === "sign-in" ? "Sign In" : "Create Account"}
+            </Text>
           )}
+        </Pressable>
+
+        <Pressable style={styles.toggleLink} onPress={toggleMode}>
+          <Text style={styles.toggleLinkText}>
+            {mode === "sign-in"
+              ? "Don't have an account? Create one"
+              : "Already have an account? Sign in"}
+          </Text>
         </Pressable>
       </View>
     </KeyboardAvoidingView>
@@ -182,5 +224,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  toggleLink: {
+    alignItems: "center",
+    padding: 12,
+    marginTop: 4,
+  },
+  toggleLinkText: {
+    color: "#2563eb",
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
