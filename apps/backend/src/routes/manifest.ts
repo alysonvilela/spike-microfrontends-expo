@@ -28,7 +28,13 @@ export async function handleManifest(request: Request): Promise<Response> {
   const rawEnv = request.headers.get("X-Env") ?? "production";
   const env: Env = rawEnv === "local" ? "local" : "production";
 
-  const manifest = resolveManifest({ env, appVersion });
+  // Entries are built on the host this request arrived at, so a device that
+  // reached the backend over the LAN gets frontend URLs it can also reach.
+  const manifest = resolveManifest({
+    env,
+    appVersion,
+    host: new URL(request.url).hostname,
+  });
 
   return new Response(JSON.stringify(manifest), {
     status: 200,

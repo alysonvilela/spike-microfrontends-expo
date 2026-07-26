@@ -1,12 +1,12 @@
 {
   "version": 0,
   "ttl": 300,
-  "env": "local",
+  "env": "production",
   "apps": [
     {
       "id": "clube",
       "name": "Clube",
-      "entry": "http://192.168.18.125:3000",
+      "entry": "https://clube.alysonvilela.com",
       "minAppVersion": "1.0.0",
       "presentation": "tab",
       "bridge": ["auth", "navigation"],

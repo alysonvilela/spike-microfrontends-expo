@@ -3,6 +3,16 @@ import { API_BASE_URL, APP_VERSION } from "../constants";
 import { saveManifestCache, getManifestCache } from "./storage";
 import bundledData from "./manifest.bundled.json";
 
+/**
+ * The manifest compiled into the app binary.
+ *
+ * It carries **production** entries, because that is what is true for a
+ * shipped build at the moment it first launches offline. It is a cold-start
+ * placeholder, not a routing source of truth — the remote manifest resolves
+ * entries against the host the backend was actually reached on, so in local
+ * dev these production URLs are replaced within milliseconds of reaching the
+ * home screen, before any of them can be opened.
+ */
 const BUNDLED_MANIFEST = bundledData as Manifest;
 
 /**

@@ -64,13 +64,57 @@ describe("resolveManifest", () => {
     expect(result.apps).toHaveLength(1);
   });
 
-  it("local env includes port in entry URL", () => {
+  it("local env without a host targets Caddy on the registrable domain", () => {
+    // Caddy terminates TLS on 443 and proxies to the dev server, so the
+    // client never names localPort.
     const result = resolveManifest({
       env: "local",
       appVersion: "1.0.0",
     });
 
-    expect(result.apps[0].entry).toBe("https://clube.alysonvilela.local:3000");
+    expect(result.apps[0].entry).toBe("https://clube.alysonvilela.local");
+  });
+
+  it("local env keeps the Caddy shape when reached on the registrable domain", () => {
+    const result = resolveManifest({
+      env: "local",
+      appVersion: "1.0.0",
+      host: "auth.alysonvilela.local",
+    });
+
+    expect(result.apps[0].entry).toBe("https://clube.alysonvilela.local");
+  });
+
+  it("local env builds entries on the LAN IP the backend was reached on", () => {
+    // The physical-device case: no DNS for *.alysonvilela.local, no trust for
+    // Caddy's internal CA, so the device must talk to the dev server directly.
+    const result = resolveManifest({
+      env: "local",
+      appVersion: "1.0.0",
+      host: "192.168.18.125",
+    });
+
+    expect(result.apps[0].entry).toBe("http://192.168.18.125:3000");
+  });
+
+  it("local env builds entries on localhost when reached on localhost", () => {
+    const result = resolveManifest({
+      env: "local",
+      appVersion: "1.0.0",
+      host: "localhost",
+    });
+
+    expect(result.apps[0].entry).toBe("http://localhost:3000");
+  });
+
+  it("production env ignores the request host", () => {
+    const result = resolveManifest({
+      env: "production",
+      appVersion: "1.0.0",
+      host: "192.168.18.125",
+    });
+
+    expect(result.apps[0].entry).toBe("https://clube.alysonvilela.com");
   });
 
   it("production env does not include port in entry URL", () => {
