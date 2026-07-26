@@ -202,6 +202,80 @@ describe("backend", () => {
     });
   });
 
+  describe("GET /api/manifest", () => {
+    it("returns 401 when no auth is provided", async () => {
+      const res = await app.fetch(new Request("http://auth.localhost:3001/api/manifest"));
+      expect(res.status).toBe(401);
+    });
+
+    it("returns 200 with manifest for authenticated user", async () => {
+      const res = await app.fetch(
+        new Request("http://auth.localhost:3001/api/manifest", {
+          headers: { authorization: `Bearer ${session.token}` },
+        }),
+      );
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body).toHaveProperty("version");
+      expect(body.ttl).toBe(300);
+      expect(body.env).toBe("production");
+      expect(Array.isArray(body.apps)).toBe(true);
+      expect(body.apps.length).toBeGreaterThan(0);
+      expect(body.apps[0].id).toBe("clube");
+    });
+
+    it("defaults to production env when X-Env is absent", async () => {
+      const res = await app.fetch(
+        new Request("http://auth.localhost:3001/api/manifest", {
+          headers: { authorization: `Bearer ${session.token}` },
+        }),
+      );
+      const body = await res.json();
+      expect(body.env).toBe("production");
+    });
+
+    it("returns local entries with port when X-Env is local", async () => {
+      const res = await app.fetch(
+        new Request("http://auth.localhost:3001/api/manifest", {
+          headers: {
+            authorization: `Bearer ${session.token}`,
+            "X-Env": "local",
+          },
+        }),
+      );
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.env).toBe("local");
+      expect(body.apps[0].entry).toContain(":3000");
+    });
+
+    it("respects X-App-Version header for filtering", async () => {
+      const res = await app.fetch(
+        new Request("http://auth.localhost:3001/api/manifest", {
+          headers: {
+            authorization: `Bearer ${session.token}`,
+            "X-App-Version": "0.9.0",
+          },
+        }),
+      );
+      expect(res.status).toBe(200);
+
+      const body = await res.json();
+      expect(body.apps).toHaveLength(0);
+    });
+
+    it("sets cache-control header", async () => {
+      const res = await app.fetch(
+        new Request("http://auth.localhost:3001/api/manifest", {
+          headers: { authorization: `Bearer ${session.token}` },
+        }),
+      );
+      expect(res.headers.get("cache-control")).toContain("max-age=300");
+    });
+  });
+
   describe("better-auth API forwarding", () => {
     it("forwards to better-auth handler for /api/auth/get-session", async () => {
       const res = await app.fetch(

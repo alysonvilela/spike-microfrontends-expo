@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "auth": "workspace:*",
+    "manifest": "workspace:*",
     "elysia": "^1.2.0",
     "@elysiajs/cors": "^1.2.0"
   },

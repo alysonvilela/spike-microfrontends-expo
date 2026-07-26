@@ -66,6 +66,8 @@ type AppDefinition = {
   name: string;
   /** Subdomain portion of the entry URL (e.g. `"clube"` → `clube.alysonvilela.com`). */
   subdomain: string;
+  /** Port for local development (e.g. 3000 for app-clube). Omit for production. */
+  localPort?: number;
   minAppVersion: string;
   presentation: Presentation;
   bridge: string[];
@@ -79,6 +81,7 @@ const APP_DEFINITIONS: AppDefinition[] = [
     id: "clube",
     name: "Clube",
     subdomain: "clube",
+    localPort: 3000,
     minAppVersion: "1.0.0",
     presentation: "tab",
     bridge: ["auth", "navigation"],
@@ -108,15 +111,18 @@ export function resolveManifest(options: ResolveManifestOptions): Manifest {
     }
     // Version gate: hide if the caller's app is too old
     return compareVersions(appVersion, app.minAppVersion) >= 0;
-  }).map((app) => ({
-    id: app.id,
-    name: app.name,
-    entry: `${protocol}://${app.subdomain}.${domain}`,
-    minAppVersion: app.minAppVersion,
-    presentation: app.presentation,
-    bridge: [...app.bridge],
-    fallback: app.fallback,
-  }));
+  }).map((app) => {
+    const port = env === "local" && app.localPort ? `:${app.localPort}` : "";
+    return {
+      id: app.id,
+      name: app.name,
+      entry: `${protocol}://${app.subdomain}.${domain}${port}`,
+      minAppVersion: app.minAppVersion,
+      presentation: app.presentation,
+      bridge: [...app.bridge],
+      fallback: app.fallback,
+    };
+  });
 
   return {
     version: Date.now(),
