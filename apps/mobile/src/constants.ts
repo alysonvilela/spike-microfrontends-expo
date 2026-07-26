@@ -1,23 +1,31 @@
+import Constants from "expo-constants";
 import { Platform } from "react-native";
+
+const BACKEND_PORT = 3001;
 
 /**
  * How to reach the backend from a device/simulator.
  *
  * - iOS simulator: localhost works (host is the Mac)
  * - Android emulator: 10.0.2.2 maps to the host machine
- * - Physical device: must use the machine's LAN IP
- *
- * Set EXPO_PUBLIC_API_BASE_URL in a .env file to override at build time
- * (Metro replaces the string at bundle time, but TS won't validate it).
+ * - Physical device (Expo Go): uses the dev machine's LAN IP from
+ *   Constants.expoConfig?.hostUri (e.g. "192.168.1.5:8081")
  */
 function resolveApiHost(): string {
-  if (Platform.OS === "android") {
-    // Android emulator's alias for the host machine
-    return "http://10.0.2.2:3001";
+  // Physical device via Expo Go — derive LAN IP from the dev server host
+  const hostUri = Constants.expoConfig?.hostUri;
+  if (hostUri) {
+    const host = hostUri.split(":")[0];
+    return `http://${host}:${BACKEND_PORT}`;
   }
 
-  // iOS simulator and others
-  return "http://localhost:3001";
+  if (Platform.OS === "android") {
+    // Android emulator's alias for the host machine
+    return `http://10.0.2.2:${BACKEND_PORT}`;
+  }
+
+  // iOS simulator — localhost maps to the host machine
+  return `http://localhost:${BACKEND_PORT}`;
 }
 
 export const API_BASE_URL = resolveApiHost();
