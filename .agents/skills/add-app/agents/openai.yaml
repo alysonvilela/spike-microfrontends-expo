@@ -1,0 +1,5 @@
+interface:
+  display_name: "Add App"
+  short_description: "Wire a new micro-frontend into the shell"
+policy:
+  allow_implicit_invocation: true
