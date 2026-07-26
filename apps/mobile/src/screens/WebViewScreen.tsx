@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -44,6 +44,16 @@ export function WebViewScreen({
   const webViewRef = useRef<WebView>(null);
   const [state, setState] = useState<WebViewState>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Timeout: show error if the target page doesn't load within 15s
+  useEffect(() => {
+    if (state !== "loading") return;
+    const timer = setTimeout(() => {
+      setState("error");
+      setErrorMessage("The target app did not respond. Make sure it is running and reachable from this device.");
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, [state]);
 
   const handleError = useCallback((event: { nativeEvent: { description: string } }) => {
     setState("error");
