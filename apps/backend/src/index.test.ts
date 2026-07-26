@@ -141,7 +141,7 @@ describe("backend", () => {
       );
       expect(res.status).toBe(400);
       const body = await res.json();
-      expect(body.error).toContain("to");
+      expect(body.error).toBe("Missing redirect target");
     });
 
     it("returns 400 when to is not allowlisted", async () => {
