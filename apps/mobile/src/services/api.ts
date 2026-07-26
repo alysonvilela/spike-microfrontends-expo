@@ -18,9 +18,15 @@ export async function signUp(
   password: string,
 ): Promise<SignInResult> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/auth/sign-up/email`, {
+    const url = `${API_BASE_URL}/api/auth/sign-up/email`;
+    console.log("[api] POST %s", url);
+
+    const res = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        origin: API_BASE_URL,
+      },
       body: JSON.stringify({ name, email, password }),
     });
 
@@ -57,7 +63,10 @@ export async function signIn(email: string, password: string): Promise<SignInRes
 
     const res = await fetch(url, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        origin: API_BASE_URL,
+      },
       body: JSON.stringify({ email, password }),
     });
 
