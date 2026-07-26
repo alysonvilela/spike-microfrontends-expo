@@ -10,6 +10,11 @@ const PORT = Number(process.env.PORT) || 3001;
 
 const app = new Elysia()
   .use(cors({ origin: true, credentials: true }))
+  // Log every incoming request: method and path
+  .onRequest(({ request }) => {
+    const url = new URL(request.url);
+    console.log("=> %s %s", request.method, url.pathname);
+  })
   // Forward all better-auth API routes to the native better-auth handler
   .all("/api/auth/*", async ({ request }) => {
     return auth.handler(request);

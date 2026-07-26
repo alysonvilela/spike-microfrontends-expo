@@ -52,13 +52,18 @@ export async function signUp(
  */
 export async function signIn(email: string, password: string): Promise<SignInResult> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/auth/sign-in/email`, {
+    const url = `${API_BASE_URL}/api/auth/sign-in/email`;
+    console.log("[api] POST %s", url);
+
+    const res = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ email, password }),
     });
 
+    console.log("[api] sign-in status=%d", res.status);
     const body = await res.json();
+    console.log("[api] sign-in body=%j", body);
 
     if (res.ok) {
       return {
@@ -70,10 +75,10 @@ export async function signIn(email: string, password: string): Promise<SignInRes
 
     return {
       ok: false,
-      error: body.error?.message ?? body.error ?? "Sign in failed",
+      error: body.error?.message ?? body.error ?? `Sign in failed (${res.status})`,
     };
   } catch (err) {
-    const message = err instanceof TypeError ? "Network error — check your connection" : "An unexpected error occurred";
+    const message = err instanceof TypeError ? `Network error — check your connection (${API_BASE_URL})` : "An unexpected error occurred";
     return { ok: false, error: message };
   }
 }
