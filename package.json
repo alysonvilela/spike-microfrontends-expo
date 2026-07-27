@@ -1,14 +1,20 @@
 {
   "name": "microfrontends",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run turbo dev --filter=./apps/*",
-    "turbo": "turbo"
+    "turbo": "turbo",
+    "compose:check": "bun run scripts/docker-compose-check.ts"
   },
   "devDependencies": {
-    "turbo": "^2.5.0",
     "@biomejs/biome": "^1.9.4",
+    "dotenv": "^8.2.0",
+    "node-fetch": "^3.3.2",
+    "turbo": "^2.5.0",
     "typescript": "^5.8.0"
   },
   "packageManager": "bun@1.3.5",

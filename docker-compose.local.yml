@@ -1,36 +1,23 @@
 # Local development stack
 # ========================
 #
-# Brings up every service with one command:
+# Brings up backend + app-clube together with one command:
 #
-#   docker compose -f docker-compose.local.yml up
+#   docker compose -f docker-compose.local.yml up --build
 #
-# Caddy terminates TLS for *.alysonvilela.local and reverse-proxies to the
-# individual dev servers.  On first run, trust Caddy's CA:
+# Current auth flow (see docs/adr/0002-local-dev-localhost-subdomains.md)
+# authenticates over plain HTTP on host-only cookies (no Domain attribute,
+# no TLS) — the two services just need to be reachable on the same host
+# under different ports. There is no Caddy/subdomain hop in this path;
+# real subdomains + TLS are parked (see docs/adr and issue 01).
 #
-#   caddy trust
+# Verify the composed stack end-to-end:
 #
-# See scripts/setup-local-tls.sh for automated CA setup.
+#   bun run scripts/docker-compose-check.ts
 
 name: microfrontends-local
 
 services:
-  # ---- Reverse proxy + TLS ----
-  caddy:
-    image: caddy:2-alpine
-    container_name: mf-caddy
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "2019:2019" # Caddy admin API
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-    networks:
-      - mf-net
-
   # ---- Backend (Better Auth + Elysia) ----
   backend:
     build:
@@ -39,18 +26,14 @@ services:
     container_name: mf-backend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "${BACKEND_PORT:-3001}:3001"
     environment:
       - NODE_ENV=development
-      - HOST=alysonvilela.local
       - PORT=3001
     volumes:
-      - ./apps/backend:/app/apps/backend
-      - ./packages:/app/packages
+      - backend_data:/app/packages/auth/data
     networks:
       - mf-net
-    depends_on:
-      - caddy
 
   # ---- app-clube (Next.js) ----
   app-clube:
@@ -60,23 +43,21 @@ services:
     container_name: mf-clube
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "${APP_CLUBE_PORT:-3000}:3000"
     environment:
       - NODE_ENV=development
-      - HOST=alysonvilela.local
       - PORT=3000
-    volumes:
-      - ./apps/app-clube:/app/apps/app-clube
-      - ./packages:/app/packages
+      # SSR runs inside this container, so it reaches the backend over the
+      # compose network by service name — not by the host-published port.
+      - AUTH_BASE_URL=http://backend:3001
     networks:
       - mf-net
     depends_on:
-      - caddy
+      - backend
 
 networks:
   mf-net:
     driver: bridge
 
 volumes:
-  caddy_data:
-  caddy_config:
+  backend_data:

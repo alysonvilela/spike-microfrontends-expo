@@ -12,7 +12,7 @@
  *
  * Setup (run once):
  *   mkdir -p data
- *   cd packages/auth && bunx drizzle-kit push:sqlite && cd ../..
+ *   cd packages/auth && bunx drizzle-kit push && cd ../..
  *   DB_PATH=./data/auth.db bun run scripts/ott-spike.ts
  *
  * This script is THROWAWAY — not wired into the app, no test coverage.

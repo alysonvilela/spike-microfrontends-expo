@@ -10,7 +10,7 @@ import {
 import type { Manifest as ManifestType } from "manifest";
 import { API_BASE_URL, APP_VERSION } from "../constants";
 import { startManifestLoad } from "../services/manifest";
-import { generateOtt } from "../services/api";
+import { generateOtt, signOut } from "../services/api";
 import { clearAll, getUserEmail } from "../services/storage";
 
 type HomeScreenProps = {
@@ -60,6 +60,7 @@ export function HomeScreen({
   }
 
   async function handleSignOut() {
+    await signOut(bearerToken);
     await clearAll();
     onSignOut();
   }

@@ -93,6 +93,29 @@ export async function signIn(email: string, password: string): Promise<SignInRes
 }
 
 /**
+ * Sign out via the backend's Better Auth API.
+ *
+ * The bearer plugin converts the Authorization header into the session
+ * cookie server-side, so this deletes the real session row in the DB —
+ * not just a local token wipe. That's what makes the next WebView
+ * navigation to a webapp render logged-out instead of a stale
+ * authenticated page: the SSR session check queries this same session.
+ */
+export async function signOut(bearerToken: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${bearerToken}`,
+      },
+    });
+  } catch {
+    // Best-effort — local storage is cleared regardless so the shell
+    // never gets stuck signed in if the backend is unreachable.
+  }
+}
+
+/**
  * Generate a one-time token (OTT) using the stored bearer token.
  * The OTT is used by the shell to perform the WebView handshake.
  */
